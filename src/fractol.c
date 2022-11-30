@@ -1,24 +1,22 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
+#include <mlx.h>
+#include <libft.h>
+#include <math.h>
 #include <X11/X.h>
 #include <X11/keysym.h>
-#include <mlx.h>
-
-#define WINDOW_WIDTH 600
-#define WINDOW_HEIGHT 300
+#include <stdio.h>
 
 #define MLX_ERROR 1
+#define WINDOW_WIDTH 500
+#define WINDOW_HEIGHT 500
 
-#define RED_PIXEL 0xFF0000
-#define GREEN_PIXEL 0xFF00
-#define WHITE_PIXEL 0xFFFFFF
+/*For mandelbrot set, we want to run the equation and see which values trend towards infinity.
+We color them based on how many iterations it takes them to escape the bounds of the mandelbrot set.*/
 
 typedef struct s_img
 {
 	void	*mlx_img;
 	char	*addr;
-	int		bpp; /* bits per pixel */
+	int		bpp;
 	int		line_len;
 	int		endian;
 }	t_img;
@@ -28,122 +26,124 @@ typedef struct s_data
 	void	*mlx_ptr;
 	void	*win_ptr;
 	t_img	img;
-	int		cur_img;
+	int	cur_img;
 }	t_data;
 
-typedef struct s_rect
+void	pixel_img_put(t_img *img, int x, int y, int color) //Should create another image as a buffer.
 {
-	int	x;
-	int	y;
-	int width;
-	int height;
-	int color;
-}	t_rect;
+	char	*dst;
 
-void	img_pix_put(t_img *img, int x, int y, int color)
+	dst = img->addr + (y * img->line_len + x * (img->bpp / 8));
+	*(unsigned int*)dst = color;
+}
+
+double	map_range(double x, double a, double b, double min, double max)
 {
-	char    *pixel;
-	int		i;
+	return ((b - a) * (x - min) / (max - min) + a);
+}
 
-	i = img->bpp - 8;
-    pixel = img->addr + (y * img->line_len + x * (img->bpp / 8));
-	while (i >= 0)
+unsigned long createTRGB(int t, int r, int g, int b)
+{
+    return ((t << 24) + (r << 16) + (g << 8) + b);
+}
+
+double	ft_abs(double num)
+{
+	if (num < 0)
+		return (num * -1);
+	return (num);
+}
+
+int	calc_mandelbrot(int x, int y)
+{
+	int	iterations;
+	double	a;
+	double	b;
+	double	aa;
+	double	bb;
+
+	a = map_range(x, -2, 2, 0, 500);
+	//printf("A value: %f\n", a);
+	b = map_range(y, -2, 2, 0, 500);
+	iterations = 0;
+	while (iterations < 100)
 	{
-		/* big endian, MSB is the leftmost bit */
-		if (img->endian != 0)
-			*pixel++ = (color >> i) & 0xFF;
-		/* little endian, LSB is the leftmost bit */
-		else
-			*pixel++ = (color >> (img->bpp - 8 - i)) & 0xFF;
-		i -= 8;
+		aa = a * a - b * b;
+		bb = 2 * a * b;
+		a = aa + map_range(x, -2, 2, 0, 500);
+		b = bb + map_range(y, -2, 2, 0, 500);
+		if (ft_abs(a + b) > 16)
+			break ;
+		iterations++;
+	}
+	return (iterations);
+}
+
+int	color_mandelbrot(int iterations)
+{
+	int	r;
+	int	g;
+	int	b;
+
+	if (iterations == 100)
+		return (0x000000);
+	else
+	{
+		r = map_range(iterations, 0, 255, 1, 99);
+		g = map_range(iterations, 0, 255, 1, 99);
+		b = map_range(iterations, 0, 255, 1, 99);
+		return (createTRGB(0, r, g, b));
 	}
 }
 
-/* The x and y coordinates of the rect corresponds to its upper left corner. */
-
-int render_rect(t_img *img, t_rect rect)
-{
-	int	i;
-	int j;
-
-	i = rect.y;
-	while (i < rect.y + rect.height)
-	{
-		j = rect.x;
-		while (j < rect.x + rect.width)
-			img_pix_put(img, j++, i, rect.color);
-		++i;
-	}
-	return (0);
-}
-
-void	render_background(t_img *img, int color)
-{
-	int	i;
-	int	j;
-
-	i = 0;
-	while (i < WINDOW_HEIGHT)
-	{
-		j = 0;
-		while (j < WINDOW_WIDTH)
-		{
-			img_pix_put(img, j++, i, color);
-		}
-		++i;
-	}
-}
-
-int	handle_keypress(int keysym, t_data *data)
+int	handle_input(int keysym, t_data *fractol)
 {
 	if (keysym == XK_Escape)
-	{
-		mlx_destroy_window(data->mlx_ptr, data->win_ptr);
-		data->win_ptr = NULL;
-	}
+		mlx_destroy_window(fractol->mlx_ptr, fractol->win_ptr);
 	return (0);
 }
 
-int	render(t_data *data)
+int	handle_no_event(void *data) //Needs to exist for mlx loop to close properly?
 {
-	if (data->win_ptr == NULL)
-		return (1);
-	render_background(&data->img, WHITE_PIXEL);
-	render_rect(&data->img, (t_rect){WINDOW_WIDTH - 100, WINDOW_HEIGHT - 100, 100, 100, GREEN_PIXEL});
-	render_rect(&data->img, (t_rect){0, 0, 100, 100, RED_PIXEL});
-
-	mlx_put_image_to_window(data->mlx_ptr, data->win_ptr, data->img.mlx_img, 0, 0);
-
 	return (0);
 }
 
-int	main(void)
+int main(void)
 {
-	t_data	data;
+	t_data fractol;
+	int	x;
+	int	y;
 
-	data.mlx_ptr = mlx_init();
-	if (data.mlx_ptr == NULL)
+	fractol.mlx_ptr = mlx_init(); //Connect to Mlx instance
+	if  (fractol.mlx_ptr == NULL)
 		return (MLX_ERROR);
-	data.win_ptr = mlx_new_window(data.mlx_ptr, WINDOW_WIDTH, WINDOW_HEIGHT, "my window");
-	if (data.win_ptr == NULL)
+
+	fractol.win_ptr = mlx_new_window(fractol.mlx_ptr, WINDOW_WIDTH, WINDOW_HEIGHT, "fractol"); //Window creation
+	if (fractol.win_ptr == NULL)
 	{
-		free(data.win_ptr);
-		return (MLX_ERROR);
+		free(fractol.win_ptr);
+		return(MLX_ERROR);
 	}
 
-	/* Setup hooks */ 
-	data.img.mlx_img = mlx_new_image(data.mlx_ptr, WINDOW_WIDTH, WINDOW_HEIGHT);
-	
-	data.img.addr = mlx_get_data_addr(data.img.mlx_img, &data.img.bpp,
-			&data.img.line_len, &data.img.endian);
+	mlx_hook(fractol.win_ptr, 2, 1L<<0, ft_mlx_close, &fractol); //Hook for closing window with ESC.
+	mlx_loop_hook(fractol.mlx_ptr, &handle_no_event, &fractol);
+	fractol.img.mlx_img = mlx_new_image(fractol.mlx_ptr, WINDOW_WIDTH, WINDOW_HEIGHT); //Create image buffer
+	fractol.img.addr = mlx_get_data_addr(fractol.img.mlx_img, &fractol.img.bpp, &fractol.img.line_len, &fractol.img.endian); //Populate img struct
+	x = 0;
+	while (x <= WINDOW_WIDTH)
+	{
+		y = 0;
+		while(y <= WINDOW_HEIGHT)
+		{
+				pixel_img_put(&fractol.img, x, y, color_mandelbrot(calc_mandelbrot(x, y)));
+			y++;
+		}
+		x++;
+	}
 
-	mlx_loop_hook(data.mlx_ptr, &render, &data);
-	mlx_hook(data.win_ptr, KeyPress, KeyPressMask, &handle_keypress, &data);
+	mlx_put_image_to_window(fractol.mlx_ptr, fractol.win_ptr, fractol.img.mlx_img, 0, 0);
+	mlx_loop(fractol.mlx_ptr); //Rendering stuff
 
-	mlx_loop(data.mlx_ptr);
-
-	/* we will exit the loop if there's no window left, and execute this code */
-	mlx_destroy_image(data.mlx_ptr, data.img.mlx_img);
-	mlx_destroy_display(data.mlx_ptr);
-	free(data.mlx_ptr);
+	mlx_destroy_display(fractol.mlx_ptr); //Exit mlx_loop when there is no window left and free memory.
+	free(fractol.mlx_ptr);
 }

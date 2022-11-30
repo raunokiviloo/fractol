@@ -36,7 +36,7 @@ $(MINILIBX): $(SRC_MINILIBX)
 	@$(MAKE) -s -C $(DIR_MINILIBX)
 		
 $(OBJ): $(SRC)
-	$(CC) $(CFLAGS) -I/usr/include -Imlx_linux -O3 -c $< -o $@
+	$(CC) $(CFLAGS) -I/usr/include -Imlx_linux -Ilibft -O3 -c $< -o $@
 	
 clean:
 	@$(RM) $(OBJ) $(OBJ_LIBFT)
