@@ -18,7 +18,7 @@ RM = rm -f
 
 CC = clang
 
-CFLAGS = -Wall -Wextra -Werror
+CFLAGS = -Wall -Wextra -Werror -ggdb
 
 
 all: $(NAME)
