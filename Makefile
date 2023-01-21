@@ -1,32 +1,33 @@
 NAME = fractol
 
 LIBFT = $(DIR_LIBFT)/libft.a
-MINILIBX = $(DIR_MINILIBX)/*.a
+MINILIBX = $(DIR_MINILIBX)/libmlx.a
 
 DIR_LIBFT = libft
 DIR_MINILIBX = mlx_linux
-DIR_SRC = src
+DIR_OBJ = obj/
 
-SRC = $(DIR_SRC)/fractol.c
-SRC_LIBFT = $(DIR_LIBFT)/*.c
-SRC_MINILIBX = $(DIR_MINILIBX)/*.c 
+SRC = events.c fractol.c init.c render.c util.c   
+VPATH = src
+
+HEADER = inc/fractol.h
 
 OBJ = $(SRC:.c=.o)
 OBJ_LIBFT = $(DIR_LIBFT)/*.o
+OBJS = $(addprefix $(DIR_OBJ), $(OBJ))
 
 RM = rm -f
 
 CC = clang
-
+INC = -I./inc -I/usr/include -Imlx_linux -Ilibft
+LIB = -Lmlx_linux -lmlx_Linux -Llibft -lft -L/usr/lib -lXext -lX11 -lm -lz
 CFLAGS = -Wall -Wextra -Werror -ggdb
 
 
-all: $(NAME)
+all: $(NAME) 
 
-bonus: all 
-
-$(NAME): $(LIBFT) $(MINILIBX) $(OBJ)
-	$(CC) $(CFLAGS) $(OBJ) -Lmlx_linux -lmlx_Linux -Llibft -lft -L/usr/lib -Imlx_linux -lXext -lX11 -lm -lz -o $(NAME)
+$(NAME): $(LIBFT) $(MINILIBX) $(OBJS)
+	$(CC) $(CFLAGS) $(OBJS) $(LIB) -o $(NAME)
 	@echo "Successfully made $(NAME)!"
 	
 $(LIBFT): $(SRC_LIBFT)
@@ -34,12 +35,15 @@ $(LIBFT): $(SRC_LIBFT)
 	
 $(MINILIBX): $(SRC_MINILIBX)
 	@$(MAKE) -s -C $(DIR_MINILIBX)
-		
-$(OBJ): $(SRC)
-	$(CC) $(CFLAGS) -I/usr/include -Imlx_linux -Ilibft -O3 -c $< -o $@
+
+$(DIR_OBJ)%.o: %.c $(HEADER)
+	@mkdir $(DIR_OBJ)
+	$(CC) $(CFLAGS) -c $< $(INC) -o $@
+	
+bonus: all 
 	
 clean:
-	@$(RM) $(OBJ) $(OBJ_LIBFT)
+	@$(RM) $(OBJS) $(OBJ_LIBFT)
 	@echo "Objects removed successfully!"
 
 fclean: clean
