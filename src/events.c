@@ -24,6 +24,11 @@ int	handle_redcross(t_fract *fractol)
 	exit_program(fractol);
 	return (0);
 }
+/*1. Convert axes into a range.
+2. Convert mouse coordinates to complex numbers.
+3. Get % of mouse x of total width
+4. Scale it by range_real
+5. Calc new min / max values based on delta w/ mouse*/
 
 int	handle_zoom(int button, int x, int y, t_fract *fractol)
 {
