@@ -33,6 +33,8 @@ int	count_iter(t_fract *fractol, double c_real, double c_imaginary)
 			z_imaginary = tmp;
 			n++;
 		}
+		fractol->cur_i = z_imaginary;
+		fractol->cur_r = z_real;
 	}
 	else if (fractol->set == JULIA)
 		n = count_julia(fractol, c_real, c_imaginary);
@@ -41,20 +43,25 @@ int	count_iter(t_fract *fractol, double c_real, double c_imaginary)
 
 int	count_julia(t_fract *fractol, double c_real, double c_imaginary)
 {
+	double	z_real;
+	double	z_imaginary;
 	double	tmp;
 	int		n;
 
+	z_real = c_real;
+	z_imaginary = c_imaginary;
 	n = 0;
 	while (n < MAX_ITER)
 	{
-		if ((c_imaginary * c_imaginary + c_real * c_real) > 4.0)
+		if (z_real * z_real + z_imaginary * z_imaginary > 4.0)
 			break ;
-		tmp = 2 * c_real * c_imaginary + fractol->k_imaginary;
-		c_real = c_real * c_real - c_imaginary
-			* c_imaginary + fractol->k_real;
-		c_imaginary = tmp;
+		tmp = 2 * z_real * z_imaginary + fractol->k_imaginary;
+		z_real = z_real * z_real - z_imaginary * z_imaginary + fractol->k_real;
+		z_imaginary = tmp;
 		n++;
 	}
+	fractol->cur_r = z_real;
+	fractol->cur_i = z_imaginary;
 	return (n);
 }
 /* color_pixel
@@ -69,24 +76,34 @@ int	count_julia(t_fract *fractol, double c_real, double c_imaginary)
 	is represented by 2 hexadecimal digits, so 1 byte in total.
 */
 
+int	color_map(double value)
+{
+	double	r;
+	double	g;
+	double	b;
+
+	r = sin(value * 0.01 + 2.0) * 127 + 128;
+	g = sin(value * 0.02 + 4.0) * 127 + 128;
+	b = sin(value * 0.04 + 6.0) * 127 + 128;
+	return ((int)(r) << 16 | (int)(g) << 8
+			| (int)(b));
+}
+
 void	color_pixel(t_fract *fractol, int x, int y, int iter_count)
 {
-	int	color;
+	int		color;
+	double	smooth_value;
 
 	if (iter_count == MAX_ITER)
+	{
 		color = 0x000000;
-	if (iter_count < 26)
-		color = 0x3c00ff;
-	if (iter_count < 24)
-		color = 0x00f9ff;
-	if (iter_count < 22)
-		color = 0x00ff38;
-	if (iter_count < 20)
-		color = 0xfdff00;
-	if (iter_count < 18)
-		color = 0xfd00ff;
-	if (iter_count < 16)
-		color = 0x000000;
+	}
+	else
+	{
+		smooth_value = iter_count + 1 - log(log2(sqrt(fractol->cur_r
+						* fractol->cur_r + fractol->cur_i * fractol->cur_i)));
+		color = color_map(smooth_value);
+	}
 	fractol->buf[x * 4 + y * WIDTH * 4 + 3] = color >> 24;
 	fractol->buf[x * 4 + y * WIDTH * 4 + 2] = color >> 16;
 	fractol->buf[x * 4 + y * WIDTH * 4 + 1] = color >> 8;

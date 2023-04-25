@@ -46,6 +46,8 @@ typedef struct s_fract
 	double	imaginary_max;
 	double	k_real;
 	double	k_imaginary;
+	double	cur_r;
+	double	cur_i;
 }	t_fract;
 
 // Key Symbols
@@ -63,6 +65,7 @@ int		handle_keypress(int keysym, t_fract *fractol);
 int		handle_redcross(t_fract *fractol);
 int		count_iter(t_fract *fractol, double c_real, double c_imaginary);
 int		count_julia(t_fract *fractol, double c_real, double c_imaginary);
+int		color_map(double value);
 void	color_pixel(t_fract *fractol, int x, int y, int iter_count);
 void	render(t_fract *fractol);
 int		handle_zoom(int button, int x, int y, t_fract *fractol);

@@ -27,20 +27,28 @@ int	handle_redcross(t_fract *fractol)
 
 int	handle_zoom(int button, int x, int y, t_fract *fractol)
 {
-	double	zoom;
+	double		zoom;
+	double		mouse_real;
+	double		mouse_imaginary;
+	double		range_real;
+	double		range_imaginary;
 
-	(void)x;
-	(void)y;
 	if (button == MWHLUP)
-		zoom = 0.5;
+		zoom = 1.1;
 	else if (button == MWHLDWN)
-		zoom = 2.0;
+		zoom = 0.9;
 	else
 		return (0);
-	fractol->real_min *= zoom;
-	fractol->real_max *= zoom;
-	fractol->imaginary_min *= zoom;
-	fractol->imaginary_max *= zoom;
+	range_real = fractol->real_max - fractol->real_min;
+	range_imaginary = fractol->imaginary_max - fractol->imaginary_min;
+	mouse_real = fractol->real_min + x * range_real / (double)WIDTH;
+	mouse_imaginary = fractol->imaginary_max - y
+		* range_imaginary / (double)HEIGHT;
+	fractol->real_min += (mouse_real - fractol->real_min) * (1 - zoom);
+	fractol->real_max = fractol->real_min + range_real * zoom;
+	fractol->imaginary_max -= (fractol->imaginary_max
+			- mouse_imaginary) * (1 - zoom);
+	fractol->imaginary_min = fractol->imaginary_max - range_imaginary * zoom;
 	render(fractol);
 	return (0);
 }

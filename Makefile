@@ -20,7 +20,7 @@ RM = rm -f
 
 CC = clang
 INC = -I./inc -I/usr/include -Imlx_linux -Ilibft
-LIB = -Lmlx_linux -lmlx_Linux -Llibft -lft -L/usr/lib -lXext -lX11 -lm -lz
+LIB = -Lmlx_linux -lmlx_Linux -Llibft -lft -L/usr/lib -lXext -lX11 -lm
 CFLAGS = -Wall -Wextra -Werror -ggdb
 
 
@@ -37,7 +37,7 @@ $(MINILIBX): $(SRC_MINILIBX)
 	@$(MAKE) -s -C $(DIR_MINILIBX)
 
 $(DIR_OBJ)%.o: %.c $(HEADER)
-	@mkdir $(DIR_OBJ)
+	@mkdir -p $(DIR_OBJ)
 	$(CC) $(CFLAGS) -c $< $(INC) -o $@
 	
 bonus: all 
